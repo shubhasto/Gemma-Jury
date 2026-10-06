@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemma Jury — Multi-Judge AI Code Review System</title>
+    
+    <!-- Meta tags for hackathon presentation -->
+    <meta name="description" content="Gemma Jury is a multi-judge autonomous AI code review architecture powered by Google Gemma 4. Features independent correctness, skeptic, edge-case, and quality judges synthesized by a verifier.">
+    <meta name="keywords" content="Gemma, AI Code Review, Multi-Judge, Google DeepMind, Hackathon, Python, Flask">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Design System Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- Top Navigation / Brand Header -->
+        <header class="app-header">
+            <div class="brand-wrapper">
+                <div class="brand-icon">⚖️</div>
+                <div>
+                    <h1 class="brand-title">
+                        Gemma Jury
+                        <span class="brand-badge">26B ENSEMBLE</span>
+                    </h1>
+                    <p class="brand-subtitle">Multi-Judge AI Code Review System</p>
+                </div>
+            </div>
+
+            <div class="header-status-group">
+                <!-- Theme Palette Switcher -->
+                <div class="palette-switcher" title="Select UI color palette">
+                    <span class="palette-label">Palette:</span>
+                    <button type="button" class="btn-theme-dot btn-theme-gold active" data-theme="gold" title="Gavel Gold (Warm Judicial Default)"></button>
+                    <button type="button" class="btn-theme-dot btn-theme-emerald" data-theme="emerald" title="Cyber Emerald & Mint"></button>
+                    <button type="button" class="btn-theme-dot btn-theme-violet" data-theme="violet" title="Nebula Violet & Magenta"></button>
+                    <button type="button" class="btn-theme-dot btn-theme-titanium" data-theme="titanium" title="Titanium Slate & Silver"></button>
+                </div>
+
+                <div class="status-pill">
+                    <span class="status-indicator-dot"></span>
+                    <span>Jury Chamber Active</span>
+                </div>
+                <div class="model-pill">
+                    Model: <span>gemma-4-26b-a4b-it</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Quick-Load Presets Banner -->
+        <section class="scenario-bar">
+            <span class="scenario-label">
+                <span>⚡</span> Quick Presets:
+            </span>
+            <div class="scenario-buttons">
+                <button type="button" class="btn-preset active" data-preset="binary_search_bug">
+                    🐛 Off-by-One Search (Python)
+                </button>
+                <button type="button" class="btn-preset" data-preset="sql_injection_bug">
+                    🛡️ SQL Injection (JS)
+                </button>
+                <button type="button" class="btn-preset" data-preset="zero_division_bug">
+                    ⚠️ Division by Zero (Python)
+                </button>
+                <button type="button" class="btn-preset" data-preset="correct_palindrome">
+                    ✅ Robust Palindrome (Python)
+                </button>
+                <button type="button" class="btn-preset" data-preset="correct_lru">
+                    ✅ Optimal Fibonacci (Python)
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Workbench Layout -->
+        <main class="workbench-grid">
+
+            <!-- Left Panel: Input Workbench & Code Editor -->
+            <section class="glass-panel" id="workbenchPanel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span class="panel-title-icon">💻</span> Submission Workbench
+                    </h2>
+                    <div class="panel-actions">
+                        <span class="form-label-hint">All fields mandatory</span>
+                    </div>
+                </div>
+
+                <!-- Programming Language Input -->
+                <div class="form-group">
+                    <div class="form-label">
+                        <span>Programming Language</span>
+                        <span class="form-label-hint">Select or type custom</span>
+                    </div>
+                    <div class="lang-selector-group">
+                        <input 
+                            type="text" 
+                            id="language" 
+                            class="input-text" 
+                            placeholder="e.g. Python, JavaScript, Rust..." 
+                            value="Python" 
+                            autocomplete="off"
+                        >
+                    </div>
+                    <div class="quick-langs">
+                        <span class="lang-pill active" data-lang="Python">Python</span>
+                        <span class="lang-pill" data-lang="JavaScript">JavaScript</span>
+                        <span class="lang-pill" data-lang="TypeScript">TypeScript</span>
+                        <span class="lang-pill" data-lang="C++">C++</span>
+                        <span class="lang-pill" data-lang="Java">Java</span>
+                        <span class="lang-pill" data-lang="Go">Go</span>
+                        <span class="lang-pill" data-lang="Rust">Rust</span>
+                    </div>
+                </div>
+
+                <!-- Task / Problem Definition -->
+                <div class="form-group">
+                    <div class="form-label">
+                        <span>Task / Problem Specification</span>
+                        <span class="form-label-hint">Requirements & expectations</span>
+                    </div>
+                    <textarea 
+                        id="task" 
+                        class="textarea-styled textarea-task" 
+                        placeholder="Describe what the code is expected to do, including constraints and expected behavior..."
+                    ></textarea>
+                </div>
+
+                <!-- Code Editor Container -->
+                <div class="form-group">
+                    <div class="form-label">
+                        <span>Source Code</span>
+                        <span class="form-label-hint">Paste snippet to inspect</span>
+                    </div>
+
+                    <div class="code-editor-box">
+                        <div class="editor-toolbar">
+                            <div class="editor-tab">
+                                <span class="editor-tab-dot"></span>
+                                <span id="editorTabLabel">solution.py</span>
+                            </div>
+                            <div class="editor-tools">
+                                <button type="button" class="editor-btn" id="copyCodeButton" title="Copy code to clipboard">
+                                    📋 Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="editor-wrapper">
+                            <div class="line-numbers" id="lineNumbers">1</div>
+                            <textarea 
+                                id="code" 
+                                class="textarea-code" 
+                                spellcheck="false" 
+                                placeholder="Paste or type code here..."
+                            ></textarea>
+                        </div>
+
+                        <div class="editor-footer">
+                            <span id="editorStats">0 lines • 0 chars</span>
+                            <span>Tab inserts 4 spaces • Ctrl + Enter to run</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-row">
+                    <button type="button" id="reviewButton" class="btn-run-jury">
+                        <span>⚖️</span> Convene the Jury
+                    </button>
+                    <button type="button" id="clearButton" class="btn-clear" title="Clear inputs">
+                        Reset
+                    </button>
+                </div>
+
+                <!-- Error Notification Banner -->
+                <div id="errorBanner" class="error-banner" role="alert">
+                    <span class="error-icon">⚠️</span>
+                    <div class="error-text" id="errorMessage">Error text</div>
+                    <button type="button" class="error-close" onclick="GemmaJury.hideError()">&times;</button>
+                </div>
+            </section>
+
+            <!-- Right Panel: Deliberation Progress & Review Results -->
+            <section class="results-wrapper">
+
+                <!-- Loading / Multi-Judge Deliberation Tracker -->
+                <div class="loading-box" id="loadingBox">
+                    <div class="deliberation-header">
+                        <div class="deliberation-title">
+                            <div class="spinner-radar"></div>
+                            <span>Gemma Jury Deliberation in Progress...</span>
+                        </div>
+                        <div class="deliberation-timer" id="deliberationTimer">00:00s</div>
+                    </div>
+
+                    <div class="deliberation-pipeline">
+                        <div class="pipeline-step active" id="step-correctness">
+                            <div class="step-icon-wrap">🎯</div>
+                            <div class="step-info">
+                                <div class="step-name">Correctness Judge</div>
+                                <div class="step-desc">Verifies task requirements, return values & core logic</div>
+                            </div>
+                            <div class="step-status">Evaluating...</div>
+                        </div>
+
+                        <div class="pipeline-step" id="step-skeptic">
+                            <div class="step-icon-wrap">🕵️</div>
+                            <div class="step-info">
+                                <div class="step-name">Skeptic Judge</div>
+                                <div class="step-desc">Actively probes for hidden flaws, regressions & vulnerabilities</div>
+                            </div>
+                            <div class="step-status">Pending</div>
+                        </div>
+
+                        <div class="pipeline-step" id="step-edgecase">
+                            <div class="step-icon-wrap">⚡</div>
+                            <div class="step-info">
+                                <div class="step-name">Edge-Case Judge</div>
+                                <div class="step-desc">Stress tests boundaries, empty inputs, overflows & scales</div>
+                            </div>
+                            <div class="step-status">Pending</div>
+                        </div>
+
+                        <div class="pipeline-step" id="step-quality">
+                            <div class="step-icon-wrap">💎</div>
+                            <div class="step-info">
+                                <div class="step-name">Quality Judge</div>
+                                <div class="step-desc">Audits complexity, performance, idioms & hygiene</div>
+                            </div>
+                            <div class="step-status">Pending</div>
+                        </div>
+
+                        <div class="pipeline-step" id="step-verifier">
+                            <div class="step-icon-wrap">🔎</div>
+                            <div class="step-info">
+                                <div class="step-name">Verifier Cross-Examination</div>
+                                <div class="step-desc">Filters hallucinations, weighs evidence & eliminates false alarms</div>
+                            </div>
+                            <div class="step-status">Pending</div>
+                        </div>
+
+                        <div class="pipeline-step" id="step-final">
+                            <div class="step-icon-wrap">🏆</div>
+                            <div class="step-info">
+                                <div class="step-name">Final Consensus Verdict</div>
+                                <div class="step-desc">Synthesizes aggregate decision, confidence & key issues</div>
+                            </div>
+                            <div class="step-status">Pending</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State Placeholder (Before Running) -->
+                <div class="glass-panel results-empty-state" id="emptyState">
+                    <div class="empty-icon">⚖️</div>
+                    <h3 class="empty-title">The Court is in Recess</h3>
+                    <p class="empty-desc">
+                        Provide your task and code on the left, or pick one of the quick presets above, then click <strong>"Convene the Jury"</strong> to begin independent multi-judge evaluation.
+                    </p>
+                </div>
+
+                <!-- Results Container (Revealed after fetch) -->
+                <div class="results-container" id="results">
+
+                    <!-- Prominent Hero Final Verdict -->
+                    <div class="verdict-hero" id="verdictHero">
+                        <div class="verdict-header-row">
+                            <div class="verdict-badge-wrap">
+                                <div class="verdict-gavel-icon" id="verdictGavelIcon">⚖️</div>
+                                <div>
+                                    <div class="verdict-title-tag">Consensus Decision</div>
+                                    <div class="verdict-title-text" id="verdictTitle">FINAL VERDICT</div>
+                                </div>
+                            </div>
+
+                            <div class="verdict-meta-right">
+                                <div class="confidence-box">
+                                    <span class="confidence-label">Confidence:</span>
+                                    <span class="confidence-val high" id="confidenceValue">HIGH</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="verdict-body">
+                            <div class="verdict-section-title">Judicial Reasoning</div>
+                            <div class="verdict-reason formatted-content" id="verdictReason"></div>
+
+                            <div class="verdict-key-issues formatted-content" id="verdictKeyIssues" style="display: none;"></div>
+
+                            <div class="verdict-raw-collapse">
+                                <button type="button" class="btn-toggle-raw" id="btnToggleRaw" onclick="GemmaJury.toggleRawVerdict()">
+                                    <span>👁️</span> Show Raw Gavel Decision
+                                </button>
+                                <pre class="raw-content-block" id="verdictRawContent"></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Verifier Cross-Examination Card -->
+                    <div class="verifier-card">
+                        <div class="verifier-header">
+                            <div class="verifier-title-wrap">
+                                <div class="verifier-icon-badge">🔎</div>
+                                <div>
+                                    <h3 class="verifier-name">Independent Verifier Report</h3>
+                                    <span class="verifier-sub">Cross-examines claims, filters judge hallucinations & rejects false positives</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="verifier-body formatted-content" id="verificationBody"></div>
+                    </div>
+
+                    <!-- 4 Independent Judge Cards -->
+                    <div>
+                        <div class="judges-section-title">
+                            <span>👨‍⚖️ Independent Gemma Judges</span>
+                            <span class="judges-count-badge" id="judgesCountBadge">4 Active Judges</span>
+                        </div>
+                        <div class="judges-grid" id="judgesGrid">
+                            <!-- Populated dynamically via script.js -->
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+        </main>
+
+        <!-- Application Footer -->
+        <footer class="app-footer">
+            <div class="footer-left">
+                <span>⚖️ <strong>Gemma Jury</strong></span>
+                <span>•</span>
+                <span>Built for Hackathons with Google Gemma 4</span>
+            </div>
+            <div class="footer-right">
+                <span class="footer-link">Multi-Agent Deliberation Architecture</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Application Script Controller -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
